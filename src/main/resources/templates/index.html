@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timesheet Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="/css/styles.css" rel="stylesheet">
+</head>
+<body class="app-shell bg-light">
+<div class="container py-5">
+    <!-- Header Area -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-5 p-4 bg-white rounded-4 shadow-sm">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge rounded-pill px-3 py-1.5 fw-semibold" 
+                      th:classappend="${isManager ? 'bg-primary-subtle text-primary' : 'bg-success-subtle text-success'}" 
+                      th:text="${isManager ? 'Manager Portal' : 'Employee Portal'}">
+                    Portal
+                </span>
+            </div>
+            <h1 class="h3 mb-1 fw-bold text-dark">Timesheet Management System</h1>
+            <p class="text-muted mb-0">
+                Welcome back, <strong class="text-dark" th:text="${username}">User</strong>. 
+                <span th:text="${isManager ? 'Review and manage organization timesheets.' : 'Submit and monitor your work logs.'}">Task</span>
+            </p>
+        </div>
+        <div class="d-flex flex-column flex-sm-row gap-2 align-items-stretch align-items-sm-center">
+            <a th:href="@{/change-password}" class="btn btn-outline-secondary px-4 rounded-3 d-flex align-items-center gap-2">
+                <i class="bi bi-key-fill"></i> Change Password
+            </a>
+            <form th:action="@{/logout}" method="post" class="m-0">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                <button type="submit" class="btn btn-outline-danger px-4 rounded-3 d-flex align-items-center gap-2">
+                    <i class="bi bi-box-arrow-right"></i> Logout
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="row gy-4">
+        
+        <!-- Left Side: Employee Submission Form -->
+        <div class="col-lg-4" th:if="${!isManager}">
+            <div class="card p-4 shadow-sm rounded-4 border-0 bg-white">
+                <div class="mb-4">
+                    <h2 class="h5 mb-2 fw-bold text-dark">Submit Timesheet</h2>
+                    <p class="text-muted small mb-0">Record your hours worked for approval.</p>
+                </div>
+                <form th:action="@{/save}" method="post" th:object="${timesheet}">
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-semibold">Employee Name</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-person"></i></span>
+                            <input type="text"
+                                   th:field="*{employeeName}"
+                                   class="form-control rounded-3 bg-light border-start-0 text-muted"
+                                   readonly
+                                   required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-semibold">Project Name</label>
+                        <input type="text"
+                               th:field="*{projectName}"
+                               class="form-control rounded-3"
+                               placeholder="e.g. Apollo Portal"
+                               required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-semibold">Hours Worked</label>
+                        <input type="number"
+                               th:field="*{hoursWorked}"
+                               class="form-control rounded-3"
+                               placeholder="e.g. 8"
+                               min="1" max="24"
+                               required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-semibold">Task Description</label>
+                        <textarea
+                             th:field="*{taskDescription}"
+                             class="form-control rounded-3"
+                             rows="3"
+                             placeholder="Detail your tasks..."></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-semibold">Work Date</label>
+                        <input type="date"
+                               th:field="*{workDate}"
+                               class="form-control rounded-3"
+                               required>
+                    </div>
+                    
+                    <button class="btn btn-primary w-100 rounded-3 py-2.5 fw-bold d-flex align-items-center justify-content-center gap-2">
+                        <i class="bi bi-send-fill"></i> Submit Timesheet
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Left Side: Manager Analytics Dashboard -->
+        <div class="col-lg-4" th:if="${isManager}">
+            <div class="card p-4 shadow-sm rounded-4 border-0 bg-white h-100 d-flex flex-column justify-content-between">
+                <div>
+                    <h2 class="h5 mb-2 fw-bold text-dark">Manager Action Center</h2>
+                    <p class="text-muted small mb-4">Overview of submitted employee timesheets.</p>
+                </div>
+                
+                <div class="d-flex flex-column gap-3 mb-2">
+                    <!-- Pending card -->
+                    <div class="stats-card p-3 rounded-3 bg-warning bg-opacity-10 border-start border-warning border-4 d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="text-warning-emphasis small fw-bold d-block text-uppercase tracking-wider">Pending Review</span>
+                            <h3 class="h2 mb-0 fw-bold text-warning-emphasis" th:text="${totalPending}">0</h3>
+                        </div>
+                        <div class="icon-circle bg-warning text-white rounded-circle d-grid place-items-center" style="width: 40px; height: 40px; display: grid;">
+                            <i class="bi bi-clock-history fs-5"></i>
+                        </div>
+                    </div>
+                    <!-- Approved card -->
+                    <div class="stats-card p-3 rounded-3 bg-success bg-opacity-10 border-start border-success border-4 d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="text-success-emphasis small fw-bold d-block text-uppercase tracking-wider">Approved</span>
+                            <h3 class="h2 mb-0 fw-bold text-success-emphasis" th:text="${totalApproved}">0</h3>
+                        </div>
+                        <div class="icon-circle bg-success text-white rounded-circle d-grid place-items-center" style="width: 40px; height: 40px; display: grid;">
+                            <i class="bi bi-check-lg fs-5"></i>
+                        </div>
+                    </div>
+                    <!-- Rejected card -->
+                    <div class="stats-card p-3 rounded-3 bg-danger bg-opacity-10 border-start border-danger border-4 d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="text-danger-emphasis small fw-bold d-block text-uppercase tracking-wider">Rejected</span>
+                            <h3 class="h2 mb-0 fw-bold text-danger-emphasis" th:text="${totalRejected}">0</h3>
+                        </div>
+                        <div class="icon-circle bg-danger text-white rounded-circle d-grid place-items-center" style="width: 40px; height: 40px; display: grid;">
+                            <i class="bi bi-x-lg fs-5"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side: Timesheet Entries Table -->
+        <div class="col-lg-8">
+            <div class="card p-0 shadow-sm rounded-4 overflow-hidden border-0 bg-white">
+                <div class="p-4 border-bottom bg-white d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="h5 mb-1 fw-bold text-dark" th:text="${isManager ? 'All Timesheet Submissions' : 'Your Submissions'}">Timesheet Entries</h2>
+                        <p class="text-muted small mb-0" th:text="${isManager ? 'Process pending hours and review history.' : 'Check approval status and past entries.'}">List of timesheets</p>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light text-muted fw-semibold small">
+                        <tr>
+                            <th class="ps-4">Date</th>
+                            <th th:if="${isManager}">Employee</th>
+                            <th>Project</th>
+                            <th>Hours</th>
+                            <th>Description</th>
+                            <th>Status</th>
+                            <th class="pe-4 text-end">Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="t : ${timesheets}">
+                            <td class="ps-4 fw-medium text-dark" th:text="${t.workDate}">2026-05-29</td>
+                            <td th:if="${isManager}" th:text="${t.employeeName}" class="fw-semibold text-primary-emphasis">Employee</td>
+                            <td th:text="${t.projectName}">Project</td>
+                            <td>
+                                <span class="badge bg-light text-dark border rounded px-2.5 py-1.5 fw-semibold" th:text="${t.hoursWorked + ' hrs'}">8 hrs</span>
+                            </td>
+                            <td class="text-truncate text-muted" style="max-width: 180px;" th:text="${t.taskDescription}">Description</td>
+                            <td>
+                                <!-- Status Badges -->
+                                <span th:if="${t.status == 'PENDING'}" class="badge bg-warning bg-opacity-10 text-warning-emphasis border border-warning-subtle rounded-pill px-3 py-1.5 fw-semibold small d-inline-flex align-items-center gap-1.5">
+                                    <span class="status-dot bg-warning"></span> Pending
+                                </span>
+                                <span th:if="${t.status == 'APPROVED'}" class="badge bg-success bg-opacity-10 text-success-emphasis border border-success-subtle rounded-pill px-3 py-1.5 fw-semibold small d-inline-flex align-items-center gap-1.5">
+                                    <span class="status-dot bg-success"></span> Approved
+                                </span>
+                                <span th:if="${t.status == 'REJECTED'}" class="badge bg-danger bg-opacity-10 text-danger-emphasis border border-danger-subtle rounded-pill px-3 py-1.5 fw-semibold small d-inline-flex align-items-center gap-1.5">
+                                    <span class="status-dot bg-danger"></span> Rejected
+                                </span>
+                            </td>
+                            <td class="pe-4 text-end">
+                                <!-- Manager actions -->
+                                <div th:if="${isManager}" class="d-inline-flex gap-2">
+                                    <a th:if="${t.status == 'PENDING'}" th:href="@{/approve/{id}(id=${t.id})}"
+                                       class="btn btn-success btn-sm rounded-3 px-3 py-1.5 fw-bold btn-action d-inline-flex align-items-center gap-1">
+                                        <i class="bi bi-check-lg"></i> Approve
+                                    </a>
+                                    <a th:if="${t.status == 'PENDING'}" th:href="@{/reject/{id}(id=${t.id})}"
+                                       class="btn btn-outline-danger btn-sm rounded-3 px-3 py-1.5 fw-bold btn-action d-inline-flex align-items-center gap-1">
+                                        <i class="bi bi-x-lg"></i> Reject
+                                    </a>
+                                    <span th:if="${t.status != 'PENDING'}" class="text-muted small py-1.5 d-inline-block">Completed</span>
+                                </div>
+                                <!-- Employee actions -->
+                                <div th:if="${!isManager}">
+                                    <span th:if="${t.status == 'PENDING'}" class="text-warning-emphasis small fw-medium">Pending Review</span>
+                                    <span th:if="${t.status == 'APPROVED'}" class="text-success-emphasis small fw-medium">Archived</span>
+                                    <span th:if="${t.status == 'REJECTED'}" class="text-danger-emphasis small fw-medium">Rejected</span>
+                                </div>
+                            </td>
+                        </tr>
+                        <!-- Empty State -->
+                        <tr th:if="${#lists.isEmpty(timesheets)}">
+                            <td th:colspan="${isManager ? 7 : 6}" class="text-center py-5 text-muted border-0">
+                                <div class="py-4">
+                                    <i class="bi bi-folder2-open text-secondary-emphasis fs-1 d-block mb-3"></i>
+                                    <h5 class="fw-bold text-dark mb-1">No Entries Found</h5>
+                                    <p class="text-muted small mb-0" th:text="${isManager ? 'There are currently no employee timesheets submitted.' : 'You have not submitted any timesheets yet.'}">Empty state message</p>
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
