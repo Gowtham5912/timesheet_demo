@@ -32,6 +32,7 @@ public class TimesheetController {
 
         if (isManager) {
             model.addAttribute("timesheets", service.getAllTimesheets());
+            model.addAttribute("auditLogs", service.getRecentAuditLogs());
             
             // Add statistics for Manager Dashboard
             long totalPending = service.getAllTimesheets().stream().filter(t -> "PENDING".equals(t.getStatus())).count();
@@ -50,6 +51,7 @@ public class TimesheetController {
     // Save Timesheet
     @PostMapping("/save")
     public String saveTimesheet(@ModelAttribute Timesheet timesheet, Authentication authentication) {
+        String actor = authentication != null ? authentication.getName() : "anonymous";
         if (authentication != null) {
             boolean isManager = authentication.getAuthorities().stream()
                     .anyMatch(a -> a.getAuthority().equals("ROLE_MANAGER"));
@@ -58,28 +60,31 @@ public class TimesheetController {
                 timesheet.setEmployeeName(authentication.getName());
             }
         }
-        service.saveTimesheet(timesheet);
+        service.saveTimesheet(timesheet, actor);
         return "redirect:/";
     }
 
     // Approve
     @GetMapping("/approve/{id}")
-    public String approve(@PathVariable Long id) {
-        service.updateStatus(id, "APPROVED");
+    public String approve(@PathVariable Long id, Authentication authentication) {
+        String actor = authentication != null ? authentication.getName() : "anonymous";
+        service.updateStatus(id, "APPROVED", actor);
         return "redirect:/";
     }
 
     // Reject
     @GetMapping("/reject/{id}")
-    public String reject(@PathVariable Long id) {
-        service.updateStatus(id, "REJECTED");
+    public String reject(@PathVariable Long id, Authentication authentication) {
+        String actor = authentication != null ? authentication.getName() : "anonymous";
+        service.updateStatus(id, "REJECTED", actor);
         return "redirect:/";
     }
 
     // Delete
     @GetMapping("/delete/{id}")
-    public String delete(@PathVariable Long id) {
-        service.deleteTimesheet(id);
+    public String delete(@PathVariable Long id, Authentication authentication) {
+        String actor = authentication != null ? authentication.getName() : "anonymous";
+        service.deleteTimesheet(id, actor);
         return "redirect:/";
     }
 }
