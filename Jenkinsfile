@@ -12,6 +12,13 @@ pipeline {
                 echo 'Fetching source code from GitHub'
             }
         }
+        stage('Environment Check') {
+            steps {
+               sh 'java -version'
+               sh 'javac -version'
+               sh 'mvn -version'
+             }
+        }
 
         stage('Build') {
             steps {
