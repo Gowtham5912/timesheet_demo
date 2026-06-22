@@ -39,6 +39,12 @@ pipeline {
             }
         }
 
+        stage('Docker Build') {
+            steps {
+                sh 'sudo docker build -t timesheet-app:latest .'
+            }
+        }
+
         stage('Archive Artifact') {
             steps {
                 archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
