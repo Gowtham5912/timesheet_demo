@@ -41,7 +41,7 @@ pipeline {
 
         stage('Docker Build') {
             steps {
-                sh 'sudo docker build -t timesheet-app:latest .'
+                sh 'docker build -t timesheet-app:latest .'
             }
         }
 
