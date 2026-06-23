@@ -120,5 +120,5 @@ Archive Artifact
 
 ## Author
 
-Gowtham D V Bolpar Gowda
+Gowtham D V Gowda
 
