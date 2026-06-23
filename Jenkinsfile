@@ -5,7 +5,7 @@ pipeline {
         maven 'Maven'
         jdk 'JDK21'
     }
-    
+
     stages {
 
         stage('Checkout') {
@@ -13,12 +13,15 @@ pipeline {
                 echo 'Fetching source code from GitHub'
             }
         }
+
         stage('Environment Check') {
             steps {
-               sh 'java -version'
-               sh 'javac -version'
-               sh 'mvn -version'
-             }
+                sh 'java -version'
+                sh 'javac -version'
+                sh 'mvn -version'
+                sh 'docker --version'
+                sh 'docker compose version'
+            }
         }
 
         stage('Build') {
@@ -35,13 +38,24 @@ pipeline {
 
         stage('Package') {
             steps {
-                sh 'mvn package'
+                sh 'mvn package -DskipTests'
             }
         }
 
         stage('Docker Build') {
             steps {
                 sh 'docker build -t timesheet-app:latest .'
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                echo 'Deploying application using Docker Compose'
+
+                sh '''
+                    docker compose down || true
+                    docker compose up -d
+                '''
             }
         }
 
@@ -53,12 +67,17 @@ pipeline {
     }
 
     post {
+
         success {
-            echo 'Build Successful!'
+            echo 'Build and Deployment Successful!'
         }
 
         failure {
-            echo 'Build Failed!'
+            echo 'Build or Deployment Failed!'
+        }
+
+        always {
+            echo 'Pipeline Execution Completed'
         }
     }
 }
